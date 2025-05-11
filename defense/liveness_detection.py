@@ -34,6 +34,7 @@ class LivenessDetector:
         # Head pose tracking state
         self.pose_camera_matrix = None
         self.pose_dist_coeffs = np.zeros((4,1))  # Assuming no lens distortion
+        self.pose_alert_triggered = False
 
         self.mp_face_mesh = mp.solutions.face_mesh
         self.face_mesh = self.mp_face_mesh.FaceMesh(refine_landmarks=True, max_num_faces=1)
@@ -87,7 +88,7 @@ class LivenessDetector:
             else:
          
                 self.head_alert_triggered = False  # Resets if movement resumes
-                
+
         self.prev_nose = (nose_x, nose_y)
         return frame
     
@@ -123,7 +124,14 @@ class LivenessDetector:
         proj_matrix = np.hstack((rotation_matrix, translation_vector))
         _, _, _, _, _, _, euler_angles = cv2.decomposeProjectionMatrix(proj_matrix)
 
-        pitch, yaw, roll = [angle[0] for angle in euler_angles]
+        # Normalize angles to range -180 to 180
+        def normalize_angle(angle):
+            return (angle + 180) % 360 - 180
+        roll, pitch, yaw = [normalize_angle(angle[0]) for angle in euler_angles]
+        pitch = normalize_angle(pitch)
+        yaw = normalize_angle(yaw)
+        roll = normalize_angle(roll)
+
         return pitch, yaw, roll
         
 
@@ -142,6 +150,25 @@ class LivenessDetector:
             cv2.putText(frame, f"Pitch: {pitch:.2f}", (50, 240), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
             cv2.putText(frame, f"Yaw: {yaw:.2f}", (50, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
             cv2.putText(frame, f"Roll: {roll:.2f}", (50, 300), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
+            # Landmark indices used for pose estimation
+            pose_landmark_indices = [1, 152, 33, 263, 61, 291]
+
+            # Draw green dots on all 6 pose landmarks
+            for idx in pose_landmark_indices:
+                x = int(face_landmarks[idx].x * w)
+                y = int(face_landmarks[idx].y * h)
+                cv2.circle(frame, (x, y), 4, (0, 255, 0), -1)  # Green dot
+
+            if abs(yaw) > 40 or abs(pitch) >25: #Spoof Alert if Head turned too far left or right
+                cv2.putText(frame, "[!] Excessive Head Angle", (50, 330), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+
+                if not self.pose_alert_triggered:
+                    with open(self.log_path, "a") as f:
+                        f.write(f"[HEAD ANGLE] Pitch: {pitch:.2f}, Yaw: {yaw:.2f} at {time.ctime()}\n")
+                    self.pose_alert_triggered = True
+            else:
+                self.pose_alert_triggered = False  # Resets when pose normalizes
 
             # Get eye landmark coordinates
             left_eye_idxs = [33, 160, 158, 133, 153, 144]
