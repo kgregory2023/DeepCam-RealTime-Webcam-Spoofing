@@ -94,7 +94,7 @@ class LivenessDetector:
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
             elif remaining > 0:
                 self.alert_triggered = False
-                cv2.putText(frame, f"Liveness OK {(remaining)}s left)", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                cv2.putText(frame, f"Liveness OK ({remaining}s left)", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
         else:
             # Resets timer if no face on source feed
