@@ -3,6 +3,9 @@ import mediapipe as mp
 import time
 import os
 
+from scipy.spatial import distance as dist
+import numpy as np
+
 class LivenessDetector:
     def __init__(self, no_blink_threshold=10, log_dir="logs"):
         self.no_blink_threshold = no_blink_threshold
@@ -20,12 +23,44 @@ class LivenessDetector:
         with open(self.log_path, "a") as f:
             f.write(f"[!] Spoof alert: No blink detected at {time.ctime()}\n")
 
+    def compute_ear(self, eye):
+        A = dist.euclidean(eye[1], eye[5])
+        B = dist.euclidean(eye[2], eye[4])
+        C = dist.euclidean(eye[0], eye[3])
+        ear = (A + B) / (2.0 * C)
+        return ear
+
     def process_frame(self, frame):
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = self.face_mesh.process(frame_rgb)
 
         if results.multi_face_landmarks:
             # Just tracks if a face is detected for now (can expand to EAR blink tracking later)
+            face_landmarks = results.multi_face_landmarks[0].landmark
+            h, w = frame.shape[:2]
+
+            # Get eye landmark coordinates
+            left_eye_idxs = [33, 160, 158, 133, 153, 144]
+            right_eye_idxs = [362, 385, 387, 263, 373, 380]
+
+            left_eye = [(int(face_landmarks[i].x * w), int(face_landmarks[i].y * h)) for i in left_eye_idxs]
+            right_eye = [(int(face_landmarks[i].x * w), int(face_landmarks[i].y * h)) for i in right_eye_idxs]
+
+            # Calculates EAR
+            left_ear = self.compute_ear(left_eye)
+            right_ear = self.compute_ear(right_eye)
+            avg_ear = (left_ear + right_ear) / 2.0
+
+            cv2.putText(frame, f"EAR: {avg_ear:.3f}", (50, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+
+            # EAR threshold for blink detection
+            EAR_THRESHOLD = 0.22
+
+            if avg_ear < EAR_THRESHOLD:
+                # Blink detected — reset the spoof timer
+                self.blink_timer = time.time()
+                self.alert_triggered = False
+
             elapsed = time.time() - self.blink_timer
             remaining = int(self.no_blink_threshold - elapsed)
 
