@@ -11,6 +11,8 @@ class LivenessDetector:
         self.no_blink_threshold = no_blink_threshold
         self.blink_timer = time.time()
         self.alert_triggered = False
+        self.blink_count = 0
+        self.blink_frame_flag = False
 
         self.mp_face_mesh = mp.solutions.face_mesh
         self.face_mesh = self.mp_face_mesh.FaceMesh(refine_landmarks=True, max_num_faces=1)
@@ -52,6 +54,7 @@ class LivenessDetector:
             avg_ear = (left_ear + right_ear) / 2.0
 
             cv2.putText(frame, f"EAR: {avg_ear:.3f}", (50, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+            cv2.putText(frame, f"Blinks: {self.blink_count}", (50, 120),cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 200, 255), 2)
 
             # EAR threshold for blink detection
             EAR_THRESHOLD = 0.22
@@ -60,6 +63,18 @@ class LivenessDetector:
                 # Blink detected — reset the spoof timer
                 self.blink_timer = time.time()
                 self.alert_triggered = False
+
+                if not self.blink_frame_flag:
+                    self.blink_count += 1
+                    self.blink_frame_flag = True
+
+                    with open(self.log_path, "a") as f:
+                        f.write(f"[BLINK] Detected at {time.ctime()}\n")
+                
+            else:
+                self.blink_frame_flag = False
+
+                    
 
             elapsed = time.time() - self.blink_timer
             remaining = int(self.no_blink_threshold - elapsed)
