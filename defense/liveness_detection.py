@@ -3,11 +3,17 @@ import mediapipe as mp
 import time
 import os
 
+from scipy.spatial import distance as dist
+import numpy as np
+
 class LivenessDetector:
-    def __init__(self, no_blink_threshold=10, log_dir="logs"):
+    def __init__(self, no_blink_threshold= 10, log_dir="logs"):
         self.no_blink_threshold = no_blink_threshold
+        self.blink_timestamps = []
         self.blink_timer = time.time()
         self.alert_triggered = False
+        self.blink_count = 0
+        self.blink_frame_flag = False
 
         self.mp_face_mesh = mp.solutions.face_mesh
         self.face_mesh = self.mp_face_mesh.FaceMesh(refine_landmarks=True, max_num_faces=1)
@@ -15,19 +21,107 @@ class LivenessDetector:
 
         os.makedirs(log_dir, exist_ok=True)
         self.log_path = os.path.join(log_dir, "events.log")
+        self.confidence_log_path = os.path.join(log_dir, "confidence.log")
+        self.last_confidence_log_time = time.time()
 
     def log_spoof_alert(self):
         with open(self.log_path, "a") as f:
             f.write(f"[!] Spoof alert: No blink detected at {time.ctime()}\n")
+    
+    def log_confidence_data(self, bpm, pattern_variance, confidence):
+        current_time = time.time()
+        if current_time - self.last_confidence_log_time >= 5:
+            with open(self.confidence_log_path, "a") as f:
+                f.write(f"[CONFIDENCE] Time: {time.ctime()} | BPM: {bpm} | Blink Variance: {pattern_variance:.3f} | Score: {confidence}\n")
+            self.last_confidence_log_time = current_time
+
+    def compute_ear(self, eye):
+        A = dist.euclidean(eye[1], eye[5])
+        B = dist.euclidean(eye[2], eye[4])
+        C = dist.euclidean(eye[0], eye[3])
+        ear = (A + B) / (2.0 * C)
+        return ear
 
     def process_frame(self, frame):
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = self.face_mesh.process(frame_rgb)
 
         if results.multi_face_landmarks:
-            # Just tracks if a face is detected for now (can expand to EAR blink tracking later)
+            # Tracks face and EAR blink tracking 
+            face_landmarks = results.multi_face_landmarks[0].landmark
+            h, w = frame.shape[:2]
+
+            # Get eye landmark coordinates
+            left_eye_idxs = [33, 160, 158, 133, 153, 144]
+            right_eye_idxs = [362, 385, 387, 263, 373, 380]
+
+            left_eye = [(int(face_landmarks[i].x * w), int(face_landmarks[i].y * h)) for i in left_eye_idxs]
+            right_eye = [(int(face_landmarks[i].x * w), int(face_landmarks[i].y * h)) for i in right_eye_idxs]
+
+            # Calculates EAR
+            left_ear = self.compute_ear(left_eye)
+            right_ear = self.compute_ear(right_eye)
+            avg_ear = (left_ear + right_ear) / 2.0
+
+            cv2.putText(frame, f"EAR: {avg_ear:.3f}", (50, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+            cv2.putText(frame, f"Blinks: {self.blink_count}", (50, 120),cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 200, 255), 2)
+
+            # EAR threshold for blink detection
+            EAR_THRESHOLD = 0.24
+
+            if avg_ear < EAR_THRESHOLD:
+                # Blink detected — reset the spoof timer
+                self.blink_timer = time.time()
+                self.alert_triggered = False
+                if not self.blink_frame_flag:
+                    self.blink_count += 1
+                    self.blink_frame_flag = True
+                    self.blink_timestamps.append(time.time())
+                    with open(self.log_path, "a") as f:
+                        f.write(f"[BLINK] Detected at {time.ctime()}\n")
+                
+            else:
+                self.blink_frame_flag = False
+
+            # BPM(Blinks Per Minute) Calculations
+            current_time = time.time()
+            self.blink_timestamps = [t for t in self.blink_timestamps if current_time - t <= 60]
+            bpm = len(self.blink_timestamps)
+
+            # Blink Variance
+            if len(self.blink_timestamps) >= 6:
+                intervals = np.diff(self.blink_timestamps[-6:])
+                pattern_variance = np.var(intervals)
+            else:
+                pattern_variance = 1.0        
+
             elapsed = time.time() - self.blink_timer
             remaining = int(self.no_blink_threshold - elapsed)
+
+            score = 100
+
+            # Blink Rates
+            if bpm < 3:
+                score -= 40
+            elif bpm < 5:
+                score -= 20
+            
+            # Since Last Blink
+            if elapsed > self.no_blink_threshold:
+                score -= 40
+
+            # Blink Randomness   
+            if pattern_variance < 0.2:
+                score -= 30
+            elif pattern_variance < 0.5:
+                score -= 15
+                
+            score = max(0, min(100, score))
+
+            cv2.putText(frame, f"BPM: {bpm}", (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+            cv2.putText(frame, f"Confidence: {score}%", (50, 180), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 200, 200), 2)
+
+            self.log_confidence_data(bpm, pattern_variance, score)
 
             if remaining <= 0:
                 if not self.alert_triggered:
@@ -35,13 +129,13 @@ class LivenessDetector:
                     self.log_spoof_alert()
                 cv2.putText(frame, "No Blink Detected", (50, 50),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
-            elif remaining > 0:
+            else:
                 self.alert_triggered = False
-                cv2.putText(frame, f"Liveness OK {(remaining)}s left)", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                cv2.putText(frame, f"Liveness OK ({remaining}s left)", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
         else:
             # Resets timer if no face on source feed
-            self.blink_timer = time.time()
+            cv2.putText(frame, f"No Face Detected", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
             self.alert_triggered = False
 
         return frame
