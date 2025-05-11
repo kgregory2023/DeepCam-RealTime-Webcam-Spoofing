@@ -7,7 +7,7 @@ from scipy.spatial import distance as dist
 import numpy as np
 
 class LivenessDetector:
-    def __init__(self, no_blink_threshold=10, log_dir="logs"):
+    def __init__(self, no_blink_threshold=5, log_dir="logs"):
         self.no_blink_threshold = no_blink_threshold
         self.blink_timestamps = []
         self.blink_timer = time.time()
