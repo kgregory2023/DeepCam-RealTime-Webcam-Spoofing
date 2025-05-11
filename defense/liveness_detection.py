@@ -9,6 +9,7 @@ import numpy as np
 class LivenessDetector:
     def __init__(self, no_blink_threshold=10, log_dir="logs"):
         self.no_blink_threshold = no_blink_threshold
+        self.blink_timestamps = []
         self.blink_timer = time.time()
         self.alert_triggered = False
         self.blink_count = 0
@@ -67,6 +68,8 @@ class LivenessDetector:
                 if not self.blink_frame_flag:
                     self.blink_count += 1
                     self.blink_frame_flag = True
+                    self.blink_timestamps.append(time.time())
+
 
                     with open(self.log_path, "a") as f:
                         f.write(f"[BLINK] Detected at {time.ctime()}\n")
@@ -74,7 +77,11 @@ class LivenessDetector:
             else:
                 self.blink_frame_flag = False
 
-                    
+            # BPM Calculations
+            current_time = time.time()
+            self.blink_timestamps = [t for t in self.blink_timestamps if current_time - t <= 60]
+            bpm = len(self.blink_timestamps)
+            cv2.putText(frame, f"BPM: {bpm}", (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)        
 
             elapsed = time.time() - self.blink_timer
             remaining = int(self.no_blink_threshold - elapsed)
