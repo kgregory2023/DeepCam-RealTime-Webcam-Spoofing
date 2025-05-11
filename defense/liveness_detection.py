@@ -7,7 +7,7 @@ from scipy.spatial import distance as dist
 import numpy as np
 
 class LivenessDetector:
-    def __init__(self, no_blink_threshold=5, log_dir="logs"):
+    def __init__(self, no_blink_threshold= 10, log_dir="logs"):
         self.no_blink_threshold = no_blink_threshold
         self.blink_timestamps = []
         self.blink_timer = time.time()
@@ -58,7 +58,7 @@ class LivenessDetector:
             cv2.putText(frame, f"Blinks: {self.blink_count}", (50, 120),cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 200, 255), 2)
 
             # EAR threshold for blink detection
-            EAR_THRESHOLD = 0.22
+            EAR_THRESHOLD = 0.24
 
             if avg_ear < EAR_THRESHOLD:
                 # Blink detected — reset the spoof timer
@@ -98,7 +98,7 @@ class LivenessDetector:
 
         else:
             # Resets timer if no face on source feed
-            self.blink_timer = time.time()
+            cv2.putText(frame, f"No Face Detected", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
             self.alert_triggered = False
 
         return frame
