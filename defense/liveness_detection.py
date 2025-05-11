@@ -38,7 +38,7 @@ class LivenessDetector:
         results = self.face_mesh.process(frame_rgb)
 
         if results.multi_face_landmarks:
-            # Just tracks if a face is detected for now (can expand to EAR blink tracking later)
+            # Tracks face and EAR blink tracking 
             face_landmarks = results.multi_face_landmarks[0].landmark
             h, w = frame.shape[:2]
 
@@ -77,7 +77,7 @@ class LivenessDetector:
             else:
                 self.blink_frame_flag = False
 
-            # BPM Calculations
+            # BPM(Blinks Per Minute) Calculations
             current_time = time.time()
             self.blink_timestamps = [t for t in self.blink_timestamps if current_time - t <= 60]
             bpm = len(self.blink_timestamps)
