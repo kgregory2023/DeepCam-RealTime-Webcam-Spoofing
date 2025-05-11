@@ -43,7 +43,7 @@ DeepCam/
 
 ## Ethical Disclaimer
 
-This project is for educational and ethical cybersecurity research only. Do **not** use this tool to deceive, impersonate, or cause harm. Always disclose your intent when testing on any system or service.
+This project is for educational and ethical cybersecurity research only. Do **not** use this tool to deceive, impersonate, or cause harm. Always disclose your intent when testing on any system or service. Do **not** modify or reuse without permission.
 
 ---
 
