@@ -172,7 +172,7 @@ class LivenessDetector:
                 y = int(face_landmarks[idx].y * h)
                 cv2.circle(frame, (x, y), 4, (0, 255, 0), -1)  # Green dot
 
-            if abs(yaw) > 40 or abs(pitch) >25: #Spoof Alert if Head turned too far left or right
+            if abs(yaw) > 50 or abs(pitch) > 45: #Spoof Alert if Head turned too far left or right
                 cv2.putText(frame, "[!] Excessive Head Angle", (50, 330), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
 
                 if not self.pose_alert_triggered:
