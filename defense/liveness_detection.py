@@ -8,7 +8,16 @@ import numpy as np
 
 class LivenessDetector:
     def __init__(self, no_blink_threshold= 10, log_dir="logs"):
+        # Blink tracking state
         self.no_blink_threshold = no_blink_threshold
+        self.model_points = np.array([
+        (0.0, 0.0, 0.0),             # Nose tip
+        (0.0, -330.0, -65.0),        # Chin
+        (-225.0, 170.0, -135.0),     # Left eye left corner
+        (225.0, 170.0, -135.0),      # Right eye right corner
+        (-150.0, -150.0, -125.0),    # Left mouth corner
+        (150.0, -150.0, -125.0)      # Right mouth corner
+        ], dtype=np.float64)
         self.blink_timestamps = []
         self.blink_timer = time.time()
         self.alert_triggered = False
@@ -21,6 +30,10 @@ class LivenessDetector:
         self.movement_threshold = 2.5  # Pixel movement sensitivity
         self.still_frame_limit = 30    # Frames of stillness before alert (~1 sec at 30 FPS)
         self.head_alert_triggered = False
+
+        # Head pose tracking state
+        self.pose_camera_matrix = None
+        self.pose_dist_coeffs = np.zeros((4,1))  # Assuming no lens distortion
 
         self.mp_face_mesh = mp.solutions.face_mesh
         self.face_mesh = self.mp_face_mesh.FaceMesh(refine_landmarks=True, max_num_faces=1)
@@ -72,10 +85,47 @@ class LivenessDetector:
                         f.write(f"[HEAD STAGNANT] Low movement detected at {time.ctime()}\n")
                     self.head_alert_triggered = True
             else:
+         
                 self.head_alert_triggered = False  # Resets if movement resumes
-        
+                
         self.prev_nose = (nose_x, nose_y)
         return frame
+    
+    def estimate_head_pose(self, face_landmarks, w, h): #method for tracking head pose
+        image_points = np.array([
+            (face_landmarks[1].x * w, face_landmarks[1].y * h),     # Nose tip
+            (face_landmarks[152].x * w, face_landmarks[152].y * h), # Chin
+            (face_landmarks[33].x * w, face_landmarks[33].y * h),   # Left eye left corner
+            (face_landmarks[263].x * w, face_landmarks[263].y * h), # Right eye right corner
+            (face_landmarks[61].x * w, face_landmarks[61].y * h),   # Left mouth
+            (face_landmarks[291].x * w, face_landmarks[291].y * h)  # Right mouth
+        ], dtype=np.float64)
+
+        if self.pose_camera_matrix is None:
+            focal_length = w
+            center = (w / 2, h / 2)
+            self.pose_camera_matrix = np.array([
+                [focal_length, 0, center[0]],
+                [0, focal_length, center[1]],
+                [0, 0, 1]
+            ], dtype=np.float64)
+
+        success, rotation_vector, translation_vector = cv2.solvePnP(
+            self.model_points,
+            image_points,
+            self.pose_camera_matrix,
+            self.pose_dist_coeffs,
+            flags=cv2.SOLVEPNP_ITERATIVE
+        )
+
+        # Converts the rotation vector to angle
+        rotation_matrix, _ = cv2.Rodrigues(rotation_vector)
+        proj_matrix = np.hstack((rotation_matrix, translation_vector))
+        _, _, _, _, _, _, euler_angles = cv2.decomposeProjectionMatrix(proj_matrix)
+
+        pitch, yaw, roll = [angle[0] for angle in euler_angles]
+        return pitch, yaw, roll
+        
 
     def process_frame(self, frame):
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -86,6 +136,12 @@ class LivenessDetector:
             face_landmarks = results.multi_face_landmarks[0].landmark
             h, w = frame.shape[:2]
             frame = self.track_nose_movement(face_landmarks, frame, w, h)
+
+            # Tracks Head Pose
+            pitch, yaw, roll = self.estimate_head_pose(face_landmarks, w, h)
+            cv2.putText(frame, f"Pitch: {pitch:.2f}", (50, 240), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+            cv2.putText(frame, f"Yaw: {yaw:.2f}", (50, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+            cv2.putText(frame, f"Roll: {roll:.2f}", (50, 300), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
             # Get eye landmark coordinates
             left_eye_idxs = [33, 160, 158, 133, 153, 144]
