@@ -1,4 +1,4 @@
-# DeepCam-RealTime-Webcam-Spoofing
+# DeepCam-RealTime-Webcam-Spoofing and Defense Monitoring
 # DeepCam: Real-Time Deepfake Webcam Spoofing & Defense Framework
 
 DeepCam simulates a real-time AI deepfake attack using a spoofed webcam feed and provides defense mechanisms such as liveness detection and facial embedding verification.
