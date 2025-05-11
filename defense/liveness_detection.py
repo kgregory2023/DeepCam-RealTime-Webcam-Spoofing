@@ -169,7 +169,7 @@ class LivenessDetector:
             cv2.putText(frame, f"MAR: {mar:.3f}", (50, 360), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 180, 0), 2)
 
             # Spoof alert if mouth too wide open or frozen closed
-            if mar < 0.10 or mar > 0.55:
+            if mar < 0.10 or mar > 0.35:
                 cv2.putText(frame, "[!] Mouth Abnormality Detected", (50, 390), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 100, 255), 2)
 
                 if not self.mar_alert_triggered:
