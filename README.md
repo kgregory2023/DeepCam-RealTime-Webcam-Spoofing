@@ -16,7 +16,7 @@ DeepCam simulates a real-time AI deepfake attack using a spoofed webcam feed and
 
 ## Features
 
-- 🔴 **Spoofing Pipeline** using DeepFaceLive and OBS
+- 🔴 **Spoofing Pipeline** using DeepFaceLive and OBS VirtualCam
 - 🔵 **Defense Toolkit** including:
   - Eye-blink and head movement detection
   - DeepFace-based face verification
