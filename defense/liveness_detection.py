@@ -36,6 +36,9 @@ class LivenessDetector:
         self.pose_dist_coeffs = np.zeros((4,1))  # Assuming no lens distortion
         self.pose_alert_triggered = False
 
+        # MAR mouth tracking
+        self.mar_alert_triggered = False
+
         self.mp_face_mesh = mp.solutions.face_mesh
         self.face_mesh = self.mp_face_mesh.FaceMesh(refine_landmarks=True, max_num_faces=1)
         self.mp_drawing = mp.solutions.drawing_utils
@@ -62,8 +65,17 @@ class LivenessDetector:
         C = dist.euclidean(eye[0], eye[3])
         ear = (A + B) / (2.0 * C)
         return ear
+    
+    # method for MAR mouth tracking
+    def compute_mar(self, mouth):
+        A = dist.euclidean(mouth[2], mouth[3])  # top lip to bottom lip
+        B = dist.euclidean(mouth[4], mouth[5])  # upper inner lip to lower inner lip
+        C = dist.euclidean(mouth[0], mouth[1])  # horizontal width
+        mar = (A + B) / (2.0 * C)
+        return mar
 
-    def track_nose_movement(self, face_landmarks, frame, w, h): #method for tracking nose tracking
+    # method for tracking nose tracking
+    def track_nose_movement(self, face_landmarks, frame, w, h): 
         nose_landmark = face_landmarks[1]
         nose_x = int(nose_landmark.x * w)
         nose_y = int(nose_landmark.y * h)
@@ -133,7 +145,6 @@ class LivenessDetector:
         roll = normalize_angle(roll)
 
         return pitch, yaw, roll, rotation_vector, translation_vector
-        
 
     def process_frame(self, frame):
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -144,6 +155,29 @@ class LivenessDetector:
             face_landmarks = results.multi_face_landmarks[0].landmark
             h, w = frame.shape[:2]
             frame = self.track_nose_movement(face_landmarks, frame, w, h)
+
+            # Tracks and Gets mouth landmark coordinates
+            mouth_idxs = [78, 308, 13, 14, 82, 312]  # corners, top, bottom, inner top, inner bottom
+            mouth = [(int(face_landmarks[i].x * w), int(face_landmarks[i].y * h)) for i in mouth_idxs]
+
+            # Draw orange mouth landmarks
+            for (x, y) in mouth:
+                cv2.circle(frame, (x, y), 2, (0, 165, 255), -1)  # Orange
+
+            # Compute MAR
+            mar = self.compute_mar(mouth)
+            cv2.putText(frame, f"MAR: {mar:.3f}", (50, 360), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 180, 0), 2)
+
+            # Spoof alert if mouth too wide open or frozen closed
+            if mar < 0.10 or mar > 0.55:
+                cv2.putText(frame, "[!] Mouth Abnormality Detected", (50, 390), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 100, 255), 2)
+
+                if not self.mar_alert_triggered:
+                    with open(self.log_path, "a") as f:
+                        f.write(f"[MOUTH SPOOF] MAR: {mar:.3f} at {time.ctime()}\n")
+                    self.mar_alert_triggered = True
+            else:
+                self.mar_alert_triggered = False
 
             # Tracks Head Pose
             pitch, yaw, roll, rvec, tvec = self.estimate_head_pose(face_landmarks, w, h)
