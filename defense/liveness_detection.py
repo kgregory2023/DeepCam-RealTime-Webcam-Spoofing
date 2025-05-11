@@ -15,6 +15,13 @@ class LivenessDetector:
         self.blink_count = 0
         self.blink_frame_flag = False
 
+        # Nose tracking state
+        self.prev_nose = None
+        self.nose_still_frame_count = 0
+        self.movement_threshold = 2.5  # Pixel movement sensitivity
+        self.still_frame_limit = 30    # Frames of stillness before alert (~1 sec at 30 FPS)
+        self.head_alert_triggered = False
+
         self.mp_face_mesh = mp.solutions.face_mesh
         self.face_mesh = self.mp_face_mesh.FaceMesh(refine_landmarks=True, max_num_faces=1)
         self.mp_drawing = mp.solutions.drawing_utils
@@ -42,6 +49,34 @@ class LivenessDetector:
         ear = (A + B) / (2.0 * C)
         return ear
 
+    def track_nose_movement(self, face_landmarks, frame, w, h): #method for tracking nose tracking
+        nose_landmark = face_landmarks[1]
+        nose_x = int(nose_landmark.x * w)
+        nose_y = int(nose_landmark.y * h)
+        cv2.circle(frame, (nose_x, nose_y), 4, (0, 255, 0), -1)
+
+        if self.prev_nose is not None:
+            dx = abs(nose_x - self.prev_nose[0])
+            dy = abs(nose_y - self.prev_nose[1])
+            movement = (dx**2 + dy**2) ** 0.5
+
+            if movement < self.movement_threshold:
+                self.nose_still_frame_count += 1
+            else:
+                self.nose_still_frame_count = 0
+
+            if self.nose_still_frame_count >= self.still_frame_limit:
+                cv2.putText(frame, "[!] Low Head Movement", (50, 210), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                if not self.head_alert_triggered:
+                    with open(self.log_path, "a") as f:
+                        f.write(f"[HEAD STAGNANT] Low movement detected at {time.ctime()}\n")
+                    self.head_alert_triggered = True
+            else:
+                self.head_alert_triggered = False  # Resets if movement resumes
+        
+        self.prev_nose = (nose_x, nose_y)
+        return frame
+
     def process_frame(self, frame):
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = self.face_mesh.process(frame_rgb)
@@ -50,6 +85,7 @@ class LivenessDetector:
             # Tracks face and EAR blink tracking 
             face_landmarks = results.multi_face_landmarks[0].landmark
             h, w = frame.shape[:2]
+            frame = self.track_nose_movement(face_landmarks, frame, w, h)
 
             # Get eye landmark coordinates
             left_eye_idxs = [33, 160, 158, 133, 153, 144]
