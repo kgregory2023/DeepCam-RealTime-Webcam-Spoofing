@@ -21,10 +21,19 @@ class LivenessDetector:
 
         os.makedirs(log_dir, exist_ok=True)
         self.log_path = os.path.join(log_dir, "events.log")
+        self.confidence_log_path = os.path.join(log_dir, "confidence.log")
+        self.last_confidence_log_time = time.time()
 
     def log_spoof_alert(self):
         with open(self.log_path, "a") as f:
             f.write(f"[!] Spoof alert: No blink detected at {time.ctime()}\n")
+    
+    def log_confidence_data(self, bpm, pattern_variance, confidence):
+        current_time = time.time()
+        if current_time - self.last_confidence_log_time >= 5:
+            with open(self.confidence_log_path, "a") as f:
+                f.write(f"[CONFIDENCE] Time: {time.ctime()} | BPM: {bpm} | Blink Variance: {pattern_variance:.3f} | Score: {confidence}\n")
+            self.last_confidence_log_time = current_time
 
     def compute_ear(self, eye):
         A = dist.euclidean(eye[1], eye[5])
@@ -64,13 +73,10 @@ class LivenessDetector:
                 # Blink detected — reset the spoof timer
                 self.blink_timer = time.time()
                 self.alert_triggered = False
-
                 if not self.blink_frame_flag:
                     self.blink_count += 1
                     self.blink_frame_flag = True
                     self.blink_timestamps.append(time.time())
-
-
                     with open(self.log_path, "a") as f:
                         f.write(f"[BLINK] Detected at {time.ctime()}\n")
                 
@@ -81,10 +87,30 @@ class LivenessDetector:
             current_time = time.time()
             self.blink_timestamps = [t for t in self.blink_timestamps if current_time - t <= 60]
             bpm = len(self.blink_timestamps)
-            cv2.putText(frame, f"BPM: {bpm}", (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)        
+
+            # Blink Variance
+            if len(self.blink_timestamps) >= 6:
+                intervals = np.diff(self.blink_timestamps[-6:])
+                pattern_variance = np.var(intervals)
+            else:
+                pattern_variance = 1.0        
 
             elapsed = time.time() - self.blink_timer
             remaining = int(self.no_blink_threshold - elapsed)
+
+            score = 100
+            if bpm < 5:
+                score -= 30
+            if elapsed > self.no_blink_threshold:
+                score -= 40
+            if pattern_variance < 0.5:
+                score -= 20
+            score = max(0, min(100, score))
+
+            cv2.putText(frame, f"BPM: {bpm}", (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+            cv2.putText(frame, f"Confidence: {score}%", (50, 180), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 200, 200), 2)
+
+            self.log_confidence_data(bpm, pattern_variance, score)
 
             if remaining <= 0:
                 if not self.alert_triggered:
@@ -92,7 +118,7 @@ class LivenessDetector:
                     self.log_spoof_alert()
                 cv2.putText(frame, "No Blink Detected", (50, 50),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
-            elif remaining > 0:
+            else:
                 self.alert_triggered = False
                 cv2.putText(frame, f"Liveness OK ({remaining}s left)", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
