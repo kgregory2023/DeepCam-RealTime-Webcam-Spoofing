@@ -99,12 +99,23 @@ class LivenessDetector:
             remaining = int(self.no_blink_threshold - elapsed)
 
             score = 100
-            if bpm < 5:
-                score -= 30
+
+            # Blink Rates
+            if bpm < 3:
+                score -= 40
+            elif bpm < 5:
+                score -= 20
+            
+            # Since Last Blink
             if elapsed > self.no_blink_threshold:
                 score -= 40
-            if pattern_variance < 0.5:
-                score -= 20
+
+            # Blink Randomness   
+            if pattern_variance < 0.2:
+                score -= 30
+            elif pattern_variance < 0.5:
+                score -= 15
+                
             score = max(0, min(100, score))
 
             cv2.putText(frame, f"BPM: {bpm}", (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
