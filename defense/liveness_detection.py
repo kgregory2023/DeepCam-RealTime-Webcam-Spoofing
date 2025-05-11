@@ -132,7 +132,7 @@ class LivenessDetector:
         yaw = normalize_angle(yaw)
         roll = normalize_angle(roll)
 
-        return pitch, yaw, roll
+        return pitch, yaw, roll, rotation_vector, translation_vector
         
 
     def process_frame(self, frame):
@@ -146,10 +146,22 @@ class LivenessDetector:
             frame = self.track_nose_movement(face_landmarks, frame, w, h)
 
             # Tracks Head Pose
-            pitch, yaw, roll = self.estimate_head_pose(face_landmarks, w, h)
+            pitch, yaw, roll, rvec, tvec = self.estimate_head_pose(face_landmarks, w, h)
             cv2.putText(frame, f"Pitch: {pitch:.2f}", (50, 240), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
             cv2.putText(frame, f"Yaw: {yaw:.2f}", (50, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
             cv2.putText(frame, f"Roll: {roll:.2f}", (50, 300), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
+            # Start point: 2D nose tip
+            nose_end_3D = np.array([[0, 0, 500.0]], dtype=np.float64)  # Point straight forward
+            nose_start = np.array([[face_landmarks[1].x * w, face_landmarks[1].y * h]], dtype=np.float64)
+
+            # Project 3D point to 2D image plane
+            nose_end_2D, _ = cv2.projectPoints(nose_end_3D, rvec, tvec, self.pose_camera_matrix, self.pose_dist_coeffs)
+
+            # Draw line from nose outward
+            p1 = tuple(nose_start.ravel().astype(int))
+            p2 = tuple(nose_end_2D[0].ravel().astype(int))
+            cv2.line(frame, p1, p2, (0, 0, 255), 2)
 
             # Landmark indices used for pose estimation
             pose_landmark_indices = [1, 152, 33, 263, 61, 291]
