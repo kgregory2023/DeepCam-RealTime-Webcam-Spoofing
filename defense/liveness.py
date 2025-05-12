@@ -40,18 +40,19 @@ class LivenessDetector:
 
 
         # Jitter Buffer
-        self.jitter_window = deque(maxlen=15)  # Store last 15(x,y) USING ONLY **Nose** positions over time
+        self.jitter_window = deque(maxlen=15)  # Store last 15(x,y) 
 
     def compute_jitter(self):
-        if len(self.jitter_window) < 5:
+        if len(self.jitter_window) < 2:
             return 0.0  # Not enough data
-        
-        x_vals, y_vals = zip(*self.jitter_window)
-        x_std = statistics.stdev(x_vals)
-        y_std = statistics.stdev(y_vals)
 
-        jitter_score = (x_std + y_std) / 2.0  # Average jitter
-        return jitter_score
+        # bases it on mouth points no longer just nose
+        diffs = [
+        ((self.jitter_window[i][0] - self.jitter_window[i-1][0])**2 +
+         (self.jitter_window[i][1] - self.jitter_window[i-1][1])**2) ** 0.5
+        for i in range(1, len(self.jitter_window))
+        ]
+        return sum(diffs) / len(diffs)
 
     def process_frame(self, frame):
         h, w = frame.shape[:2]
@@ -63,6 +64,13 @@ class LivenessDetector:
             return frame
 
         face_landmarks = results.multi_face_landmarks[0].landmark
+
+        # Get the jitter centroid based on stable landmarks
+        jitter_points = [1, 33, 263, 152]
+        xs = [face_landmarks[i].x for i in jitter_points]
+        ys = [face_landmarks[i].y for i in jitter_points]
+        centroid = (sum(xs) / len(xs), sum(ys) / len(ys))
+        self.jitter_window.append(centroid)
 
         # Uses Nose Landmark for Jitter Detection
         nose = face_landmarks[1]
