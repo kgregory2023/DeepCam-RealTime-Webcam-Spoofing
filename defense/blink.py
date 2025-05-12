@@ -3,7 +3,7 @@ import time
 from scipy.spatial import distance as dist
 
 class BlinkDetector:
-    def __init__(self, threshold=0.24):
+    def __init__(self, threshold=0.25):
         self.threshold = threshold
         self.blink_count = 0
         self.blink_frame_flag = False

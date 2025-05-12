@@ -41,6 +41,7 @@ class LivenessDetector:
 
         # Jitter Buffer
         self.jitter_window = deque(maxlen=15)  # Store last 15(x,y) 
+        self.jitter_alert_triggered = False
 
     def compute_jitter(self):
         if len(self.jitter_window) < 2:
@@ -73,8 +74,8 @@ class LivenessDetector:
         self.jitter_window.append(centroid)
 
         # Uses Nose Landmark for Jitter Detection
-        nose = face_landmarks[1]
-        self.jitter_window.append((nose.x, nose.y))
+        #nose = face_landmarks[1]
+        #self.jitter_window.append((nose.x, nose.y)) # Kept Nose Jitter For TEST Purposes
 
         frame = draw_mouth_landmarks(frame, face_landmarks, w, h)
 
@@ -178,10 +179,17 @@ class LivenessDetector:
         # Penalize for excessive jitter
         if jitter > 0.02:
             score -= 10
-        elif jitter > 0.05:
+        elif jitter >= 0.04:
             score -= 20
+            if not hasattr(self, "jitter_alert_triggered") or not self.jitter_alert_triggered:
+                log_spoof_alert(self.log_path, f"[JITTER SPOOF] Jitter Score: {jitter:.5f}")    #Jitter Spoof Message (WIP)
+                self.jitter_alert_triggered = True
         elif jitter > 0.1:
             score -= 30
+            self.jitter_alert_triggered = False
+        
+        else:
+            self.jitter_alert_triggered = False
 
         # Clamp the final score
         score = max(0, min(100, score))
