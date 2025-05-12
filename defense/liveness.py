@@ -85,8 +85,9 @@ class LivenessDetector:
             rvec, tvec, cam_matrix, dist_coeffs
         )
 
-
-        if abs(yaw) > 50 or abs(pitch) > 45:
+        pitch_threshold = 30
+        yaw_threshold = 40
+        if abs(yaw) > yaw_threshold or abs(pitch) > pitch_threshold:
             cv2.putText(frame, "[!] Head Angle Alert", (50, 330), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
             if not self.pose_alert_triggered:
                 log_spoof_alert(self.log_path, f"[HEAD ANGLE] Pitch: {pitch:.2f}, Yaw: {yaw:.2f}")
