@@ -16,6 +16,7 @@ class LivenessDetector:
 
         self.no_blink_threshold = no_blink_threshold
         self.blink = BlinkDetector()
+        self.last_score = 100
 
         # Head movement tracking
         self.prev_nose = None
@@ -122,6 +123,9 @@ class LivenessDetector:
 
         # Clamp the final score
         score = max(0, min(100, score))
+        smoothed_score = int(0.6 * self.last_score + 0.4 * score)
+        self.last_score = smoothed_score
+        score = smoothed_score
 
         if elapsed > self.no_blink_threshold:
             score -= 40
