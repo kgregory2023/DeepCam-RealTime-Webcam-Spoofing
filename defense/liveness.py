@@ -2,6 +2,7 @@ from defense.blink import BlinkDetector
 from defense.mouth import MouthTracker
 from defense.headpose import estimate_head_pose, track_nose_movement
 from defense.utils import log_spoof_alert, log_confidence_data, ensure_log_dirs
+from defense.mouth import draw_mouth_landmarks
 
 import time
 import cv2
@@ -43,6 +44,7 @@ class LivenessDetector:
             return frame
 
         face_landmarks = results.multi_face_landmarks[0].landmark
+        frame = draw_mouth_landmarks(frame, face_landmarks, w, h)
 
         # -- EAR/Blink --
         left_eye_idxs = [33, 160, 158, 133, 153, 144]

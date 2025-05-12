@@ -31,3 +31,23 @@ class MouthTracker:
             self.mar_alert_triggered = False
 
         return frame, mar
+    
+def draw_mouth_landmarks(frame, face_landmarks, w, h):
+    outer_points = [78, 308, 13, 14]
+    inner_points = [82, 312]
+
+    for idx in outer_points:
+        x = int(face_landmarks[idx].x * w)
+        y = int(face_landmarks[idx].y * h)
+        cv2.circle(frame, (x, y), 2, (0, 165, 255), -1)  # Orange
+
+    for idx in inner_points:
+        x = int(face_landmarks[idx].x * w)
+        y = int(face_landmarks[idx].y * h)
+        cv2.circle(frame, (x, y), 2, (255, 255, 255), -1)  # White
+
+    top = (int(face_landmarks[13].x * w), int(face_landmarks[13].y * h))
+    bottom = (int(face_landmarks[14].x * w), int(face_landmarks[14].y * h))
+    cv2.line(frame, top, bottom, (0, 255, 0), 1)  # Green line
+
+    return frame
