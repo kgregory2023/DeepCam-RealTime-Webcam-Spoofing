@@ -1,25 +1,25 @@
 # main.py
-
 import cv2
-from defense.liveness_detection import LivenessDetector
 
-# Creates detector instance
-detector = LivenessDetector(no_blink_threshold=10)
+from defense.liveness import LivenessDetector
 
-# Initializes webcam
-cap = cv2.VideoCapture(1)
+def main():
+    defense = LivenessDetector()
+    cap = cv2.VideoCapture(0)
 
-while cap.isOpened():
-    ret, frame = cap.read()
-    if not ret:
-        break
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
 
-    # Run liveliness detection on frame
-    processed = detector.process_frame(frame)
-    cv2.imshow("Liveliness Detection", processed)
+        output = defense.process_frame(frame)
+        cv2.imshow("Liveness Detector", output)
 
-    if cv2.waitKey(1) & 0xFF == 27:  # Symbol being the ESC key
-        break
+        if cv2.waitKey(1) & 0xFF == 27: #esc
+            break
 
-cap.release()
-cv2.destroyAllWindows()
+    cap.release()
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    main()
