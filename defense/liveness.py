@@ -40,7 +40,7 @@ class LivenessDetector:
 
 
         # Jitter Buffer
-        self.jitter_window = deque(maxlen=15)  # Store last 15(x,y) nose positions over time
+        self.jitter_window = deque(maxlen=15)  # Store last 15(x,y) USING ONLY **Nose** positions over time
 
     def compute_jitter(self):
         if len(self.jitter_window) < 5:
