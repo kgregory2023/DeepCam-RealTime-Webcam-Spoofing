@@ -15,6 +15,6 @@ def log_spoof_alert(log_path, message="[!] Spoof alert: No blink detected"):
     with open(log_path, "a") as f:
         f.write(f"{message} at {time.ctime()}\n")
 
-def log_confidence_data(log_path, bpm, variance, score):
+def log_confidence_data(log_path, bpm, variance, score, jitter):
     with open(log_path, "a") as f:
-        f.write(f"[CONFIDENCE] Time: {time.ctime()} | BPM: {bpm} | Blink Variance: {variance:.3f} | Score: {score}\n")
+        f.write(f"[CONFIDENCE] Time: {time.ctime()} | BPM: {bpm} | Blink Variance: {variance:.3f} | Jitter: {jitter:.5f} | Score: {score}\n")

@@ -1,36 +1,11 @@
-[CONFIDENCE] Time: Sun May 11 07:18:56 2025 | BPM: 0 | Blink Variance: 1.000 | Score: 70
-[CONFIDENCE] Time: Sun May 11 07:19:01 2025 | BPM: 1 | Blink Variance: 1.000 | Score: 70
-[CONFIDENCE] Time: Sun May 11 07:19:06 2025 | BPM: 8 | Blink Variance: 0.140 | Score: 80
-[CONFIDENCE] Time: Sun May 11 07:19:11 2025 | BPM: 14 | Blink Variance: 0.669 | Score: 100
-[CONFIDENCE] Time: Sun May 11 07:19:17 2025 | BPM: 18 | Blink Variance: 0.175 | Score: 80
-[CONFIDENCE] Time: Sun May 11 22:46:09 2025 | BPM: 0 | Blink Variance: 1.000 | Score: 84
-[CONFIDENCE] Time: Sun May 11 22:46:14 2025 | BPM: 1 | Blink Variance: 1.000 | Score: 58
-[CONFIDENCE] Time: Sun May 11 22:46:19 2025 | BPM: 6 | Blink Variance: 0.485 | Score: 65
-[CONFIDENCE] Time: Sun May 11 22:46:24 2025 | BPM: 6 | Blink Variance: 0.485 | Score: 65
-[CONFIDENCE] Time: Sun May 11 22:46:29 2025 | BPM: 8 | Blink Variance: 6.863 | Score: 93
-[CONFIDENCE] Time: Sun May 11 22:46:34 2025 | BPM: 11 | Blink Variance: 5.260 | Score: 98
-[CONFIDENCE] Time: Sun May 11 22:46:39 2025 | BPM: 15 | Blink Variance: 4.339 | Score: 98
-[CONFIDENCE] Time: Sun May 11 22:46:44 2025 | BPM: 17 | Blink Variance: 3.997 | Score: 85
-[CONFIDENCE] Time: Sun May 11 22:46:49 2025 | BPM: 17 | Blink Variance: 3.997 | Score: 98
-[CONFIDENCE] Time: Sun May 11 22:46:54 2025 | BPM: 18 | Blink Variance: 12.809 | Score: 91
-[CONFIDENCE] Time: Sun May 11 22:46:59 2025 | BPM: 23 | Blink Variance: 10.478 | Score: 98
-[CONFIDENCE] Time: Sun May 11 22:47:04 2025 | BPM: 27 | Blink Variance: 9.229 | Score: 95
-[CONFIDENCE] Time: Sun May 11 22:47:09 2025 | BPM: 28 | Blink Variance: 8.930 | Score: 95
-[CONFIDENCE] Time: Sun May 11 22:47:14 2025 | BPM: 26 | Blink Variance: 9.539 | Score: 80
-[CONFIDENCE] Time: Sun May 11 22:47:19 2025 | BPM: 25 | Blink Variance: 11.832 | Score: 97
-[CONFIDENCE] Time: Sun May 11 22:47:24 2025 | BPM: 27 | Blink Variance: 11.003 | Score: 98
-[CONFIDENCE] Time: Sun May 11 22:52:58 2025 | BPM: 0 | Blink Variance: 1.000 | Score: 84
-[CONFIDENCE] Time: Sun May 11 22:53:03 2025 | BPM: 1 | Blink Variance: 1.000 | Score: 40
-[CONFIDENCE] Time: Sun May 11 22:53:08 2025 | BPM: 6 | Blink Variance: 0.869 | Score: 98
-[CONFIDENCE] Time: Sun May 11 22:53:13 2025 | BPM: 7 | Blink Variance: 1.265 | Score: 90
-[CONFIDENCE] Time: Sun May 11 22:53:18 2025 | BPM: 9 | Blink Variance: 1.861 | Score: 98
-[CONFIDENCE] Time: Sun May 11 22:53:23 2025 | BPM: 9 | Blink Variance: 1.861 | Score: 95
-[CONFIDENCE] Time: Sun May 11 22:53:28 2025 | BPM: 10 | Blink Variance: 7.239 | Score: 98
-[CONFIDENCE] Time: Sun May 11 22:53:33 2025 | BPM: 10 | Blink Variance: 7.239 | Score: 95
-[CONFIDENCE] Time: Sun May 11 22:53:38 2025 | BPM: 11 | Blink Variance: 7.762 | Score: 95
-[CONFIDENCE] Time: Sun May 11 22:53:43 2025 | BPM: 13 | Blink Variance: 6.567 | Score: 95
-[CONFIDENCE] Time: Sun May 11 22:53:48 2025 | BPM: 16 | Blink Variance: 6.539 | Score: 98
-[CONFIDENCE] Time: Sun May 11 22:53:53 2025 | BPM: 24 | Blink Variance: 5.787 | Score: 95
-[CONFIDENCE] Time: Sun May 11 22:53:58 2025 | BPM: 24 | Blink Variance: 5.787 | Score: 93
-[CONFIDENCE] Time: Sun May 11 22:54:03 2025 | BPM: 24 | Blink Variance: 8.100 | Score: 93
-[CONFIDENCE] Time: Sun May 11 22:54:08 2025 | BPM: 24 | Blink Variance: 8.253 | Score: 98
+[CONFIDENCE] Time: Sun May 11 23:28:33 2025 | BPM: 1 | Blink Variance: 1.000 | Jitter: 0.00000 | Score: 84
+[CONFIDENCE] Time: Sun May 11 23:28:38 2025 | BPM: 3 | Blink Variance: 1.000 | Jitter: 0.00456 | Score: 78
+[CONFIDENCE] Time: Sun May 11 23:28:43 2025 | BPM: 7 | Blink Variance: 1.259 | Jitter: 0.01038 | Score: 98
+[CONFIDENCE] Time: Sun May 11 23:28:48 2025 | BPM: 8 | Blink Variance: 1.079 | Jitter: 0.01030 | Score: 98
+[CONFIDENCE] Time: Sun May 11 23:28:53 2025 | BPM: 9 | Blink Variance: 6.026 | Jitter: 0.01104 | Score: 98
+[CONFIDENCE] Time: Sun May 11 23:28:58 2025 | BPM: 9 | Blink Variance: 6.026 | Jitter: 0.00881 | Score: 98
+[CONFIDENCE] Time: Sun May 11 23:29:03 2025 | BPM: 9 | Blink Variance: 6.026 | Jitter: 0.00326 | Score: 5
+[CONFIDENCE] Time: Sun May 11 23:29:08 2025 | BPM: 10 | Blink Variance: 13.858 | Jitter: 0.00830 | Score: 98
+[CONFIDENCE] Time: Sun May 11 23:29:13 2025 | BPM: 10 | Blink Variance: 13.858 | Jitter: 0.00047 | Score: 95
+[CONFIDENCE] Time: Sun May 11 23:29:18 2025 | BPM: 15 | Blink Variance: 15.784 | Jitter: 0.01280 | Score: 98
+[CONFIDENCE] Time: Sun May 11 23:29:23 2025 | BPM: 18 | Blink Variance: 14.438 | Jitter: 0.00080 | Score: 95

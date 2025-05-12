@@ -1,3 +1,5 @@
+import statistics
+from collections import deque  # for jitter
 from defense.blink import BlinkDetector
 from defense.mouth import MouthTracker
 from defense.headpose import estimate_head_pose, track_nose_movement
@@ -20,6 +22,10 @@ class LivenessDetector:
         self.blink = BlinkDetector()
         self.last_score = 100
 
+        # MediaPipe FaceMesh
+        self.mp_face_mesh = mp.solutions.face_mesh
+        self.face_mesh = self.mp_face_mesh.FaceMesh(refine_landmarks=True, max_num_faces=1)
+
         # Head movement tracking
         self.prev_nose = None
         self.movement_threshold = 2.5
@@ -32,9 +38,20 @@ class LivenessDetector:
         self.alert_triggered = False
         self.mouth_tracker = MouthTracker(self.log_path)
 
-        # MediaPipe FaceMesh
-        self.mp_face_mesh = mp.solutions.face_mesh
-        self.face_mesh = self.mp_face_mesh.FaceMesh(refine_landmarks=True, max_num_faces=1)
+
+        # Jitter Buffer
+        self.jitter_window = deque(maxlen=15)  # Store last 15(x,y) nose positions over time
+
+    def compute_jitter(self):
+        if len(self.jitter_window) < 5:
+            return 0.0  # Not enough data
+        
+        x_vals, y_vals = zip(*self.jitter_window)
+        x_std = statistics.stdev(x_vals)
+        y_std = statistics.stdev(y_vals)
+
+        jitter_score = (x_std + y_std) / 2.0  # Average jitter
+        return jitter_score
 
     def process_frame(self, frame):
         h, w = frame.shape[:2]
@@ -46,6 +63,11 @@ class LivenessDetector:
             return frame
 
         face_landmarks = results.multi_face_landmarks[0].landmark
+
+        # Uses Nose Landmark for Jitter Detection
+        nose = face_landmarks[1]
+        self.jitter_window.append((nose.x, nose.y))
+
         frame = draw_mouth_landmarks(frame, face_landmarks, w, h)
 
         # -- EAR/Blink --
@@ -106,6 +128,7 @@ class LivenessDetector:
 
         elapsed = time.time() - self.blink.blink_timer
         bpm, variance = self.blink.get_bpm_and_variance()
+        jitter = self.compute_jitter()
         score = 100
 
         # Blink Rate Bonus
@@ -142,6 +165,16 @@ class LivenessDetector:
         elif variance > 1.5:
             score += 5  # irregular but likely human
 
+        jitter_score = self.compute_jitter()
+
+        # Penalize for excessive jitter
+        if jitter > 0.02:
+            score -= 10
+        elif jitter > 0.05:
+            score -= 20
+        elif jitter > 0.1:
+            score -= 30
+
         # Clamp the final score
         score = max(0, min(100, score))
         smoothed_score = int(0.6 * self.last_score + 0.4 * score)
@@ -171,8 +204,9 @@ class LivenessDetector:
 
         cv2.putText(frame, f"BPM: {bpm}", (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
         cv2.putText(frame, f"Confidence: {score}%", (50, 180), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 200, 200), 2)
+        cv2.putText(frame, f"Jitter: {jitter_score:.5f}", (50, 210), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (100, 255, 100), 2)
 
         if time.time() - self.last_confidence_log_time >= self.conf_log_interval:
-            log_confidence_data(self.confidence_log_path, bpm, variance, score)
+            log_confidence_data(self.confidence_log_path, bpm, variance, score, jitter_score)
             self.last_confidence_log_time = time.time()
         return frame
