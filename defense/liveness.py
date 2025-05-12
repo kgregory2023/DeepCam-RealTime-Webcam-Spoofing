@@ -148,6 +148,16 @@ class LivenessDetector:
         self.last_score = smoothed_score
         score = smoothed_score
 
+        # Cap confidence gain to +15 per interval
+        if hasattr(self, "prev_score"):
+            if score > self.prev_score:
+                score = min(score, self.prev_score + 15)
+        else:
+            self.prev_score = score  # Initialize if first run
+
+        # Save for next round
+        self.prev_score = score
+
         if elapsed > self.no_blink_threshold:
             score -= 40
             cv2.putText(frame, "No Blink Detected", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
