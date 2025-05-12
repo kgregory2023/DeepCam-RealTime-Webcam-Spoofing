@@ -179,7 +179,7 @@ class LivenessDetector:
         # Penalize for excessive jitter
         if jitter > 0.02:
             score -= 10
-        elif jitter >= 0.04:
+        elif jitter > 0.04:
             score -= 20
             if not hasattr(self, "jitter_alert_triggered") or not self.jitter_alert_triggered:
                 log_spoof_alert(self.log_path, f"[JITTER SPOOF] Jitter Score: {jitter:.5f}")    #Jitter Spoof Message (WIP)
