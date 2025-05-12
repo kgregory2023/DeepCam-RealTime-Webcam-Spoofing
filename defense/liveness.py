@@ -12,6 +12,7 @@ class LivenessDetector:
     def __init__(self, no_blink_threshold=10, log_dir="logs"):
         # Setup logging
         self.log_path, self.confidence_log_path = ensure_log_dirs(log_dir)
+        self.last_confidence_log_time = time.time()
         self.conf_log_interval = 5  # seconds
         self.last_confidence_log_time = 0
 
@@ -28,6 +29,7 @@ class LivenessDetector:
         self.mar_alert_triggered = False
         self.pose_alert_triggered = False
         self.head_alert_triggered = False
+        self.alert_triggered = False
         self.mouth_tracker = MouthTracker(self.log_path)
 
         # MediaPipe FaceMesh
