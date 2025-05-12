@@ -71,16 +71,18 @@ class LivenessDetector:
             self.mar_alert_triggered = False
 
         # -- Head Pose & Nose Tracking --
-        pitch, yaw, roll, rvec, tvec = estimate_head_pose(face_landmarks, w, h)
+        pitch, yaw, roll, rvec, tvec, cam_matrix, dist_coeffs = estimate_head_pose(frame, face_landmarks, w, h)
         frame, self.prev_nose, self.nose_still_frame_count, self.head_alert_triggered = track_nose_movement(
-        face_landmarks, frame, w, h, 
-        self.prev_nose, 
-        self.movement_threshold, 
-        self.nose_still_frame_count, 
-        self.still_frame_limit, 
-        self.log_path,
-        self.head_alert_triggered
-)
+            face_landmarks, frame, w, h, 
+            self.prev_nose, 
+            self.movement_threshold, 
+            self.nose_still_frame_count, 
+            self.still_frame_limit, 
+            self.log_path,
+            self.head_alert_triggered,
+            rvec, tvec, cam_matrix, dist_coeffs
+        )
+
 
         if abs(yaw) > 50 or abs(pitch) > 45:
             cv2.putText(frame, "[!] Head Angle Alert", (50, 330), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
