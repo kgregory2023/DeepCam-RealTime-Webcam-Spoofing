@@ -11,6 +11,8 @@ class LivenessDetector:
     def __init__(self, no_blink_threshold=10, log_dir="logs"):
         # Setup logging
         self.log_path, self.confidence_log_path = ensure_log_dirs(log_dir)
+        self.conf_log_interval = 5  # seconds
+        self.last_confidence_log_time = 0
 
         self.no_blink_threshold = no_blink_threshold
         self.blink = BlinkDetector()
@@ -20,7 +22,7 @@ class LivenessDetector:
         self.movement_threshold = 2.5
         self.still_frame_limit = 30
         self.nose_still_frame_count = 0
-        
+
         self.mar_alert_triggered = False
         self.pose_alert_triggered = False
         self.head_alert_triggered = False
@@ -94,17 +96,33 @@ class LivenessDetector:
         cv2.putText(frame, f"Pitch: {pitch:.2f}", (50, 240), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
         cv2.putText(frame, f"Yaw: {yaw:.2f}", (50, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
+        elapsed = time.time() - self.blink.blink_timer
         bpm, variance = self.blink.get_bpm_and_variance()
         score = 100
-        if bpm < 3:
+
+        # Blink Rate Bonus
+        if bpm >= 8:
+            score += 10  # high activity bonus
+        elif bpm < 3:
             score -= 40
         elif bpm < 5:
             score -= 20
+
+        # Last Blink Timing
+        if elapsed > self.no_blink_threshold:
+            score -= 40
+
+        # Blink Pattern Variance
         if variance < 0.2:
             score -= 30
         elif variance < 0.5:
             score -= 15
-        elapsed = time.time() - self.blink.blink_timer
+        elif variance > 1.5:
+            score += 5  # irregular but likely human
+
+        # Clamp the final score
+        score = max(0, min(100, score))
+
         if elapsed > self.no_blink_threshold:
             score -= 40
             cv2.putText(frame, "No Blink Detected", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
@@ -119,5 +137,7 @@ class LivenessDetector:
         cv2.putText(frame, f"BPM: {bpm}", (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
         cv2.putText(frame, f"Confidence: {score}%", (50, 180), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 200, 200), 2)
 
-        log_confidence_data(self.confidence_log_path, bpm, variance, score)
+        if time.time() - self.last_confidence_log_time >= self.conf_log_interval:
+            log_confidence_data(self.confidence_log_path, bpm, variance, score)
+            self.last_confidence_log_time = time.time()
         return frame
