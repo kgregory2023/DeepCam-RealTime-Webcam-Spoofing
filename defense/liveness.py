@@ -119,6 +119,20 @@ class LivenessDetector:
         # Last Blink Timing
         if elapsed > self.no_blink_threshold:
             score -= 40
+        
+        # MAR
+        if mar < 0.10 or mar > 0.35:
+            score -= 15
+
+        # Nose stillness
+        if self.nose_still_frame_count >= self.still_frame_limit:
+            score -= 20
+
+        # Head pose
+        if abs(yaw) > 50 or abs(pitch) > 45:
+            score -= 10
+        if abs(yaw) > 70 or abs(pitch) > 60:
+            score -= 20
 
         # Blink Pattern Variance
         if variance < 0.2:
